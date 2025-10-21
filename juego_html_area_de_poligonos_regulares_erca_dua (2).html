@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Juego Interactivo: Área de polígonos regulares</title>
+  <style>
+    :root{
+      --bg:#0f172a; --card:#111827; --muted:#94a3b8; --primary:#2563eb; --ok:#16a34a; --warn:#dc2626; --accent:#f59e0b;
+    }
+    html,body{height:100%}
+    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; background:radial-gradient(1000px 600px at 10% 10%, #111827, #0b1228) fixed var(--bg); color:#e5e7eb; display:grid; place-items:center; padding:16px}
+    .app{width:min(1100px, 100%);} .card{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:18px; box-shadow:0 20px 40px rgba(0,0,0,.35)}
+    h1{font-size:clamp(22px, 2.6vw, 32px); margin:0 0 10px 0;} p.lead{margin:0 0 16px 0; color:var(--muted)}
+    .grid{display:grid; gap:14px} .cols{grid-template-columns: 520px 1fr;} @media (max-width:960px){.cols{grid-template-columns:1fr}}
+    label{display:block; font-weight:600; margin-bottom:6px}
+    input, select{width:100%; padding:12px 11px; border-radius:12px; border:1px solid rgba(255,255,255,.18); background:#0b1021; color:#e5e7eb}
+    .row{display:flex; gap:10px; align-items:center} .row > *{flex:1}
+    button{border:0; padding:12px 14px; border-radius:12px; color:white; cursor:pointer; font-weight:700}
+    .primary{background:var(--primary)} .ghost{background:#1f2937} .ok{background:var(--ok)} .warn{background:var(--warn)} .accent{background:var(--accent)}
+    .out{background:#0b1021; border:1px solid rgba(255,255,255,.1); padding:12px; border-radius:12px}
+    .kpi{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+    .kpi div{background:#0b1021; border:1px solid rgba(255,255,255,.1); padding:14px; border-radius:14px}
+    .kpi .label{color:var(--muted); font-size:12px; letter-spacing:.2px} .kpi .value{font-size:18px; font-weight:800}
+    .help{font-size:12px; color:var(--muted)} .footer{opacity:.8; font-size:12px; text-align:center; margin-top:10px}
+    .svgwrap{background:#0b1021; border:1px solid rgba(255,255,255,.08); border-radius:14px; display:grid; place-items:center; height:300px}
+    .badge{display:inline-block; padding:4px 10px; border-radius:999px; background:#172554; color:#bfdbfe; font-weight:700; font-size:12px}
+    .feedback{font-weight:800}
+    .pill{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#0b1021; border:1px solid rgba(255,255,255,.1)}
+  </style>
+</head>
+<body>
+  <main class="app" role="main">
+    <div class="card">
+      <div class="row" style="justify-content:space-between; align-items:flex-end">
+        <div>
+          <h1>🧮 Juego interactivo: Área de polígonos regulares</h1>
+          <p class="lead">Selecciona figura, introduce lado y calcula <strong>ángulo central</strong> y <strong>área</strong>. Incluye <span class="badge">modo desafío</span>, <span class="badge">paso a paso (DUA)</span> y <span class="badge">modo NEE</span>.</p>
+        </div>
+        <div class="row" style="flex:0 0 auto; gap:8px">
+          <span class="pill" title="puntaje"><strong>🏆 Puntos:</strong> <span id="score">0</span></span>
+          <span class="pill" title="tiempo restante"><strong>⏱️ Tiempo:</strong> <span id="time">—</span></span>
+        </div>
+      </div>
+
+      <div class="grid cols" style="margin-top:10px">
+        <!-- Panel izquierdo: controles -->
+        <section>
+          <div class="grid" style="gap:12px">
+            <div class="row" style="gap:10px">
+              <div>
+                <label for="figura">Figura regular</label>
+                <select id="figura" aria-label="selección de figura">
+                  <option value="3">Triángulo equilátero (3)</option>
+                  <option value="4">Cuadrado (4)</option>
+                  <option value="5">Pentágono (5)</option>
+                  <option value="6" selected>Hexágono (6)</option>
+                  <option value="7">Heptágono (7)</option>
+                  <option value="8">Octógono (8)</option>
+                  <option value="9">Nonágono (9)</option>
+                  <option value="10">Decágono (10)</option>
+                  <option value="12">Dodecágono (12)</option>
+                </select>
+              </div>
+              <div>
+                <label for="lado">Medida del lado</label>
+                <div class="row">
+                  <input id="lado" type="number" min="0" step="0.01" value="10" aria-label="valor del lado" />
+                  <select id="unidad" aria-label="unidad">
+                    <option value="mm">mm</option>
+                    <option value="cm" selected>cm</option>
+                    <option value="m">m</option>
+                  </select>
+                </div>
+                <div class="help">El área se mostrará en mm², cm² o m² según la unidad.</div>
+              </div>
+            </div>
+
+            <div class="row">
+              <button class="primary" id="btnCalc">Calcular</button>
+              <button class="accent" id="btnPaso">Paso a paso</button>
+              <button class="ghost" id="btnRand">🎲 Aleatorio</button>
+              <button class="ghost" id="btnReset">Limpiar</button>
+            </div>
+
+            <div class="kpi" aria-live="polite">
+              <div>
+                <div class="label">Ángulo central</div>
+                <div id="kpiAng" class="value">–</div>
+              </div>
+              <div>
+                <div class="label">Apotema</div>
+                <div id="kpiAp" class="value">–</div>
+              </div>
+              <div>
+                <div class="label">Área</div>
+                <div id="kpiArea" class="value">–</div>
+              </div>
+            </div>
+
+            <details id="detalles" style="margin-top:6px">
+              <summary>Ver procedimiento</summary>
+              <div class="grid" style="gap:10px; margin-top:10px">
+                <div class="out" id="proc1"></div>
+                <div class="out" id="proc2"></div>
+                <div class="out" id="proc3"></div>
+                <div class="out" id="proc4"></div>
+              </div>
+            </details>
+
+            <div class="row" style="margin-top:10px">
+              <label style="margin:0; font-weight:700">Modos:</label>
+              <button class="ok" id="btnChallenge">Iniciar desafío (5 ejercicios)</button>
+              <button class="ghost" id="btnNee">Modo NEE</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Panel derecho: dibujo y desafío -->
+        <section>
+          <div class="svgwrap">
+            <svg id="svg" width="100%" height="100%" viewBox="0 0 340 300" role="img" aria-label="Polígono">
+              <defs>
+                <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#60a5fa" stop-opacity=".7"/>
+                  <stop offset="100%" stop-color="#a78bfa" stop-opacity=".7"/>
+                </linearGradient>
+              </defs>
+              <rect x="0" y="0" width="340" height="300" fill="#0b1021"/>
+              <g id="poly"></g>
+            </svg>
+          </div>
+
+          <div class="card" style="margin-top:12px; padding:12px">
+            <strong>Modo desafío:</strong>
+            <p class="help">Introduce tus respuestas y pulsa <em>Comprobar</em>. Usa <kbd>Enter</kbd> para comprobar rápido.</p>
+            <div class="grid cols">
+              <div>
+                <label>Mi ángulo central (°)</label>
+                <input id="angUser" type="number" step="0.01" placeholder="ej. 60" />
+              </div>
+              <div>
+                <label>Mi área</label>
+                <input id="areaUser" type="number" step="0.01" placeholder="ej. 155.88" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button class="ok" id="btnCheck">Comprobar</button>
+              <button class="ghost" id="btnNext">Siguiente</button>
+              <span id="fb" class="feedback"></span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="footer">M.4.2.18 · M.4.2.19 — Descomposición en triángulos · DUA · Evaluación formativa con puntaje</div>
+    </div>
+  </main>
+
+  <script>
+    const $ = (id)=>document.getElementById(id);
+    const fmt = (x, dec=2)=>Number(x).toFixed(dec).replace(/\.?0+$/,'');
+
+    const state = { n:6, s:10, unit:'cm', last:{}, challenge:false, rounds:0, score:0, nee:false, timer:null, timeLeft:0 };
+
+    // =================== Dibujo ===================
+    function drawPolygon(n){
+      const g = $("poly"); g.innerHTML = '';
+      const cx=170, cy=150, R=110; // radio visual
+      const pts = [];
+      for(let i=0;i<n;i++){
+        const a = (Math.PI*2*i)/n - Math.PI/2; // empieza arriba
+        pts.push([cx + R*Math.cos(a), cy + R*Math.sin(a)]);
+      }
+      const path = pts.map((p,i)=> (i? 'L':'M')+fmt(p[0],2)+','+fmt(p[1],2)).join(' ')+ ' Z';
+      const poly = document.createElementNS('http://www.w3.org/2000/svg','path');
+      poly.setAttribute('d', path);
+      poly.setAttribute('fill','url(#g)');
+      poly.setAttribute('stroke','#93c5fd');
+      poly.setAttribute('stroke-width','2');
+      g.appendChild(poly);
+    }
+
+    // =================== Cálculos ===================
+    function calculate(n, s){
+      const ang = 360/n; // grados
+      const ap = s/(2*Math.tan(Math.PI/n));
+      const per = n*s;
+      const area = per*ap/2;
+      return {ang, ap, per, area};
+    }
+
+    function updateKPIs(){
+      const {ang, ap, area} = state.last;
+      $("kpiAng").textContent = isFinite(ang)? fmt(ang,2)+'°':'–';
+      $("kpiAp").textContent  = isFinite(ap)? fmt(ap,4)+' '+state.unit:'–';
+      $("kpiArea").textContent= isFinite(area)? fmt(area,2)+' '+state.unit+'²':'–';
+    }
+
+    function renderProcedure(){
+      const {n,s,unit} = state; const {ang, ap, per, area} = state.last;
+      $("proc1").innerHTML = `1) Ángulo central = 360°/n = 360°/${n} = <b>${fmt(ang,2)}°</b>`;
+      $("proc2").innerHTML = `2) Apotema (a) = s/(2·tan(π/n)) = ${fmt(s)} / (2·tan(π/${n})) = <b>${fmt(ap,4)} ${unit}</b>`;
+      $("proc3").innerHTML = `3) Perímetro (P) = n·s = ${n}·${fmt(s)} = <b>${fmt(per)} ${unit}</b>`;
+      $("proc4").innerHTML = `4) Área = (P·a)/2 = (${fmt(per)}·${fmt(ap,4)})/2 = <b>${fmt(area,2)} ${unit}²</b>`;
+    }
+
+    function calc(){
+      if(!(state.n>=3) || !(state.s>0)) return;
+      state.last = calculate(state.n, state.s);
+      updateKPIs(); renderProcedure(); drawPolygon(state.n);
+    }
+
+    // =================== Aleatorio & NEE ===================
+    function randomize(){
+      const polys = state.nee ? [4,6,8] : [3,4,5,6,7,8,9,10,12];
+      state.n = polys[Math.floor(Math.random()*polys.length)];
+      $("figura").value = String(state.n);
+      const unit = state.unit;
+      const base = unit==='mm'? [20,120] : unit==='cm'? [2,20] : [0.2,2.0];
+      const val = (Math.random()*(base[1]-base[0])+base[0]);
+      state.s = Number(val.toFixed(2));
+      $("lado").value = state.s;
+      calc();
+    }
+
+    function toggleNEE(){
+      state.nee = !state.nee;
+      $("btnNee").textContent = state.nee? 'Modo NEE: ON' : 'Modo NEE';
+      $("btnNee").className = state.nee? 'warn' : 'ghost';
+      if(state.nee){
+        // simplificar: fija unidad cm y activa detalles
+        $("unidad").value='cm'; state.unit='cm';
+        $("detalles").open=true;
+      }
+      randomize();
+    }
+
+    // =================== Desafío ===================
+    function startChallenge(){
+      state.challenge = true; state.rounds = 0; state.score = 0; updateScore();
+      startTimer(60); // 60s totales
+      nextRound();
+    }
+
+    function updateScore(){ $("score").textContent = state.score; }
+
+    function startTimer(seconds){
+      clearInterval(state.timer); state.timeLeft = seconds; $("time").textContent = state.timeLeft + 's';
+      state.timer = setInterval(()=>{
+        state.timeLeft--; $("time").textContent = state.timeLeft + 's';
+        if(state.timeLeft<=0){ clearInterval(state.timer); finishChallenge(); }
+      },1000);
+    }
+
+    function nextRound(){
+      if(!state.challenge) return; state.rounds++;
+      if(state.rounds>5){ finishChallenge(); return; }
+      randomize(); // genera un nuevo ejercicio
+      $("angUser").value=''; $("areaUser").value=''; $("fb").textContent='Ejercicio '+state.rounds+' de 5';
+    }
+
+    function finishChallenge(){
+      state.challenge=false; $("fb").textContent = `Fin del desafío. Puntos: ${state.score} / 5`;
+      $("time").textContent = '—';
+    }
+
+    function check(){
+      const {ang, area} = state.last;
+      const aUser = parseFloat($("angUser").value);
+      const arUser = parseFloat($("areaUser").value);
+      if(isNaN(aUser) && isNaN(arUser)) { $("fb").textContent='Ingresa tus respuestas.'; return; }
+      const okAng = !isNaN(aUser) && Math.abs(aUser-ang) <= 0.1;
+      const okArea = !isNaN(arUser) && Math.abs(arUser-area) <= Math.max(0.5, area*0.005);
+      let msg = [];
+      if(!isNaN(aUser)) msg.push(`Ángulo: ${okAng? '✔️ Correcto':'❌ Revisa'}`);
+      if(!isNaN(arUser)) msg.push(`Área: ${okArea? '✔️ Correcta':'❌ Revisa'}`);
+      $("fb").style.color = (okAng && okArea)? 'var(--ok)': (!okAng || !okArea)? 'var(--warn)': 'inherit';
+      $("fb").textContent = msg.join(' · ');
+
+      if(state.challenge && okAng && okArea){ state.score++; updateScore(); }
+    }
+
+    // =================== Listeners ===================
+    $("figura").addEventListener('change', e=>{ state.n = parseInt(e.target.value,10); drawPolygon(state.n); });
+    $("lado").addEventListener('input', e=>{ state.s = parseFloat(e.target.value||'0'); });
+    $("unidad").addEventListener('change', e=>{ state.unit = e.target.value; });
+    $("btnCalc").addEventListener('click', calc);
+    $("btnPaso").addEventListener('click', ()=>{ $("detalles").open = true; renderProcedure(); });
+    $("btnReset").addEventListener('click', ()=>{ $("kpiAng").textContent='–'; $("kpiAp").textContent='–'; $("kpiArea").textContent='–'; $("angUser").value=''; $("areaUser").value=''; $("fb").textContent=''; $("detalles").open=false; clearInterval(state.timer); $("time").textContent='—'; state.challenge=false; state.score=0; updateScore(); });
+    $("btnRand").addEventListener('click', randomize);
+    $("btnCheck").addEventListener('click', check);
+    $("btnNext").addEventListener('click', ()=>{ if(state.challenge) nextRound(); else randomize(); });
+    $("btnChallenge").addEventListener('click', startChallenge);
+    $("btnNee").addEventListener('click', toggleNEE);
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ check(); }});
+
+    // init
+    drawPolygon(state.n); calc();
+  </script>
+</body>
+</html>
